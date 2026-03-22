@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from retrieval import vector_search
+from retrieval import vector_search, get_chunks_by_ids
 from embedding_client import embed_one
 
 load_dotenv()
@@ -71,6 +71,10 @@ class RetrievalAcceptedResponse(BaseModel):
     request_id: str
     assistant_message_id: str
     retrieved_count: int
+
+
+class FetchChunksRequest(BaseModel):
+    chunk_ids: List[str]
 
 
 def _trusted_service_tokens() -> dict[str, str]:
@@ -162,3 +166,18 @@ async def retrieve(req: RetrievalRequest, _: str = Depends(verify_internal_servi
         assistant_message_id=req.assistant_message_id,
         retrieved_count=len(chunks),
     )
+
+
+@app.post("/fetch_chunks")
+async def fetch_chunks(req: FetchChunksRequest, _: str = Depends(verify_internal_service_request)):
+    """
+    Directly fetch chunks by their IDs.
+    Used for generating summaries from history.
+    """
+    async with async_session() as session:
+        try:
+            chunks = await get_chunks_by_ids(session, req.chunk_ids)
+            return {"chunks": chunks}
+        except Exception as exc:
+            logger.error("Fetch chunks error: %s", exc)
+            raise HTTPException(500, f"Error fetching chunks: {exc}")

@@ -151,3 +151,49 @@ async def vector_search(
         }
         for row in rows
     ]
+
+async def get_chunks_by_ids(session: AsyncSession, chunk_ids: List[str]) -> List[dict]:
+    """
+    Fetch chunks by their UUIDs.
+
+    Parameters
+    ----------
+    session   : SQLAlchemy AsyncSession
+    chunk_ids : List of UUID strings
+
+    Returns
+    -------
+    List of dicts with chunk text and document title.
+    """
+    if not chunk_ids:
+        return []
+
+    sql = text("""
+        SELECT
+            c.id::text           AS chunk_id,
+            c.text               AS text,
+            c.metadata_json      AS metadata,
+            d.id::text           AS doc_id,
+            d.title              AS doc_title
+        FROM library.chunks c
+        JOIN library.documents d ON d.id = c.document_id
+        WHERE c.id = ANY(:ids::uuid[])
+    """)
+
+    try:
+        result = await session.execute(sql, {"ids": chunk_ids})
+        rows = result.mappings().all()
+    except Exception as e:
+        logger.error(f"SQL Execution error in get_chunks_by_ids: {e}")
+        return []
+
+    return [
+        {
+            "chunk_id": row["chunk_id"],
+            "text": row["text"],
+            "metadata": row["metadata"] or {},
+            "doc_id": row["doc_id"],
+            "doc_title": row["doc_title"],
+        }
+        for row in rows
+    ]
