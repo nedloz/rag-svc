@@ -36,7 +36,7 @@ INTERNAL_AUTH_ENABLED = os.environ.get("INTERNAL_AUTH_ENABLED", "false").lower()
 TRUSTED_SERVICE_TOKENS_RAW = os.environ.get("TRUSTED_SERVICE_TOKENS", "{}")
 INTERNAL_AUTH_HEADER_NAME = os.environ.get("INTERNAL_AUTH_HEADER_NAME", "X-Service-Token")
 INTERNAL_SERVICE_NAME_HEADER = os.environ.get("INTERNAL_SERVICE_NAME_HEADER", "X-Service-Name")
-
+EMBEDDER_NAME = os.environ.get("EMBEDDER_NAME", "mixedbread-ai/mxbai-embed-large-v1")
 engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
